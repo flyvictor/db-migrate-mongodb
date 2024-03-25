@@ -212,7 +212,7 @@ var MongodbDriver = Base.extend({
     return this._run('insert', this.internals.seedTable, {name: name, run_on: new Date()})
       .nodeify(callback);
   },
-  
+
   /**
    * Returns the DB instance so custom updates can be made.
    * NOTE: This method exceptionally does not call close() on the database driver when the promise resolves. So the getDbInstance method caller
@@ -482,7 +482,6 @@ function parseObjects( config, port, length ) {
  * @param callback  - The callback to call with a MongodbDriver object
  */
 exports.connect = function(config, intern, callback) {
-  var db;
   var port;
   var host;
 
@@ -551,6 +550,15 @@ exports.connect = function(config, intern, callback) {
   }
 
 
-  db = config.db || new MongoClient(new Server(host, port));
-  callback(null, new MongodbDriver(db, intern, mongoString));
+  const connectionAdapter = {
+    connect: (connectionString, callback) => {
+      MongoClient.connect(connectionString, (err, client) => {
+        if (err) return callback(err);
+        const realDb = client.db(config.database);
+        realDb.close = client.close.bind(client);
+        callback(null, realDb);
+      })
+    }
+  };
+  callback(null, new MongodbDriver(connectionAdapter, intern, mongoString));
 };

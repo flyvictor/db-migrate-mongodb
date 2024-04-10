@@ -517,10 +517,17 @@ exports.connect = function(config, intern, callback) {
       host = parseObjects(config, port, length);
   } else {
 
-    host = config.host + ':' + port;
+    if (port) {
+      host = config.host + ':' + port;
+    } else {
+      host = config.host;
+    }
   }
 
   var mongoString = 'mongodb://';
+  if (config.protocol) {
+    mongoString = config.protocol;
+  }
 
   if(config.user !== undefined && config.password !== undefined) {
     // Ensure user and password can contain special characters like "@" so app doesn't throw an exception when connecting to MongoDB
